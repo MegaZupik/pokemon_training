@@ -2,7 +2,7 @@
 // @name         Pokemon Training x50
 // @namespace    http://tampermonkey.net/
 // @version      1.2
-// @match        https://*.moswar.ru/*
+// @match        // @match        https://*.moswar.ru/pokemon/*
 // @grant        none
 // @updateURL    https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
 // @downloadURL  https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
