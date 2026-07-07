@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Pokemon Training x50
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @match        https://*.moswar.ru/pokemon/*
+// @version      1.3
+// @match        https://*.moswar.ru/*
 // @grant        none
 // @updateURL    https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
 // @downloadURL  https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
@@ -11,11 +11,16 @@
 (function () {
     'use strict';
 
+    if (document.getElementById('mw-pokemon-btn')) {
+        return;
+    }
+
     const STORAGE_X = 'mw-pokemon-btn-x';
     const STORAGE_Y = 'mw-pokemon-btn-y';
 
     const btn = document.createElement('div');
 
+    btn.id = 'mw-pokemon-btn';
     btn.textContent = 'Тренировка\nпокемона';
 
     btn.style.cssText = `
@@ -44,9 +49,12 @@
 
     document.body.appendChild(btn);
 
+
     // ---------- Статус ----------
     const status = document.createElement('div');
+
     status.id = 'mw-pokemon-status';
+
     status.style.cssText = `
         position: fixed;
         left: 50%;
@@ -61,7 +69,24 @@
         user-select: none;
         display: none;
     `;
+
     document.body.appendChild(status);
+
+
+    // ---------- Показываем только на pokemon ----------
+    function checkPage() {
+        if (location.pathname === '/pokemon/') {
+            btn.style.display = 'flex';
+        } else {
+            btn.style.display = 'none';
+            status.style.display = 'none';
+        }
+    }
+
+    checkPage();
+
+    setInterval(checkPage, 1000);
+
 
     let dragging = false;
     let moved = false;
@@ -69,8 +94,10 @@
     let offsetY = 0;
     let running = false;
 
+
     // ---------- Перетаскивание ----------
     btn.addEventListener('pointerdown', (e) => {
+
         dragging = true;
         moved = false;
 
@@ -83,7 +110,9 @@
         e.preventDefault();
     });
 
+
     btn.addEventListener('pointermove', (e) => {
+
         if (!dragging) return;
 
         moved = true;
@@ -91,8 +120,17 @@
         let x = e.clientX - offsetX;
         let y = e.clientY - offsetY;
 
-        x = Math.max(0, Math.min(window.innerWidth - btn.offsetWidth, x));
-        y = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, y));
+
+        x = Math.max(
+            0,
+            Math.min(window.innerWidth - btn.offsetWidth, x)
+        );
+
+        y = Math.max(
+            0,
+            Math.min(window.innerHeight - btn.offsetHeight, y)
+        );
+
 
         btn.style.left = x + 'px';
         btn.style.top = y + 'px';
@@ -100,48 +138,69 @@
         e.preventDefault();
     });
 
+
     btn.addEventListener('pointerup', (e) => {
+
         dragging = false;
 
         try {
             btn.releasePointerCapture(e.pointerId);
         } catch (err) {}
 
+
         btn.style.cursor = 'grab';
+
 
         localStorage.setItem(STORAGE_X, btn.offsetLeft);
         localStorage.setItem(STORAGE_Y, btn.offsetTop);
 
-        setTimeout(() => moved = false, 100);
+
+        setTimeout(() => {
+            moved = false;
+        }, 100);
+
     });
+
+
 
     // ---------- Клик ----------
     btn.addEventListener('click', async () => {
 
         if (moved || running) return;
 
+
         running = true;
 
         status.style.display = 'block';
+
 
         for (let i = 1; i <= 50; i++) {
 
             status.textContent = i;
 
+
             $.post('/pokemon/', {
                 action: 'train-pokemon'
             }, 'post', 1);
 
-            await new Promise(resolve => setTimeout(resolve, 30));
+
+            await new Promise(resolve =>
+                setTimeout(resolve, 30)
+            );
         }
 
+
         status.textContent = 'Операция завершена';
+
 
         setTimeout(() => {
             status.style.display = 'none';
         }, 2000);
 
+
         running = false;
+
     });
+
 
 })();
