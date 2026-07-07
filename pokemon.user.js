@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         Pokemon Training x50
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @match        https://*.moswar.ru/*
 // @grant        none
 // ==/UserScript==
+// @updateURL https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
+// @downloadURL https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
 
 (function () {
     'use strict';
