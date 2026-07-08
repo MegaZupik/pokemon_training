@@ -1,3 +1,18 @@
+// ==UserScript==
+// @name         Pokemon Training x50
+// @namespace    http://tampermonkey.net/
+// @version      1.3
+// @match        https://*.moswar.ru/*
+// @name         MosWar Robot Multi Button
+// @namespace    https://www.moswar.ru/
+// @version      2.0
+// @description  Robot button: mech + natal talents + abilities + item use
+// @match        https://www.moswar.ru/*
+// @grant        none
+// @updateURL    https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
+// @downloadURL  https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
+// @run-at       document-end
+// ==/UserScript==
 (function(){
 
 'use strict';
