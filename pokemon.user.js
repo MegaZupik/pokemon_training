@@ -1,8 +1,4 @@
 // ==UserScript==
-// @name         Pokemon Training x50
-// @namespace    http://tampermonkey.net/
-// @version      1.3
-// @match        https://*.moswar.ru/*
 // @name         MosWar Robot Multi Button
 // @namespace    https://www.moswar.ru/
 // @version      2.0
