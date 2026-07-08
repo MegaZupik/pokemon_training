@@ -1,206 +1,510 @@
 // ==UserScript==
-// @name         Pokemon Training x50
-// @namespace    http://tampermonkey.net/
-// @version      1.3
-// @match        https://*.moswar.ru/*
+// @name         MosWar Robot Multi Button
+// @namespace    https://www.moswar.ru/
+// @version      2.0
+// @description  Robot button: mech + natal talents + abilities + item use
+// @match        https://www.moswar.ru/*
 // @grant        none
-// @updateURL    https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
-// @downloadURL  https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
+// @run-at       document-end
 // ==/UserScript==
 
-(function () {
-    'use strict';
-
-    if (document.getElementById('mw-pokemon-btn')) {
-        return;
-    }
-
-    const STORAGE_X = 'mw-pokemon-btn-x';
-    const STORAGE_Y = 'mw-pokemon-btn-y';
+(function(){
 
-    const btn = document.createElement('div');
+'use strict';
 
-    btn.id = 'mw-pokemon-btn';
-    btn.textContent = 'Тренировка\nпокемона';
 
-    btn.style.cssText = `
-        position: fixed;
-        left: ${localStorage.getItem(STORAGE_X) ?? 20}px;
-        top: ${localStorage.getItem(STORAGE_Y) ?? 100}px;
-        width: 150px;
-        height: 100px;
-        background: #1976d2;
-        color: white;
-        font-size: 20px;
-        font-weight: bold;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        white-space: pre-line;
-        border: 2px solid black;
-        border-radius: 10px;
-        cursor: grab;
-        user-select: none;
-        touch-action: none;
-        z-index: 2147483647;
-        box-sizing: border-box;
-    `;
+const BUTTON_ID='mw-robot-button';
+const POS_KEY='mw_robot_button_position';
 
-    document.body.appendChild(btn);
 
 
-    // ---------- Статус ----------
-    const status = document.createElement('div');
+if(document.getElementById(BUTTON_ID))
+return;
 
-    status.id = 'mw-pokemon-status';
 
-    status.style.cssText = `
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 2147483647;
-        font-size: 72px;
-        font-weight: bold;
-        color: white;
-        text-shadow: 2px 2px 8px black;
-        pointer-events: none;
-        user-select: none;
-        display: none;
-    `;
 
-    document.body.appendChild(status);
 
+function sleep(ms){
 
-    // ---------- Показываем только на pokemon ----------
-    function checkPage() {
-        if (location.pathname === '/pokemon/') {
-            btn.style.display = 'flex';
-        } else {
-            btn.style.display = 'none';
-            status.style.display = 'none';
-        }
-    }
+return new Promise(
+resolve=>setTimeout(resolve,ms)
+);
 
-    checkPage();
+}
 
-    setInterval(checkPage, 1000);
 
 
-    let dragging = false;
-    let moved = false;
-    let offsetX = 0;
-    let offsetY = 0;
-    let running = false;
 
 
-    // ---------- Перетаскивание ----------
-    btn.addEventListener('pointerdown', (e) => {
 
-        dragging = true;
-        moved = false;
 
-        offsetX = e.clientX - btn.offsetLeft;
-        offsetY = e.clientY - btn.offsetTop;
+async function post(url,body){
 
-        btn.setPointerCapture(e.pointerId);
-        btn.style.cursor = 'grabbing';
 
-        e.preventDefault();
-    });
+let r =
+await fetch(
+url,
+{
 
+method:'POST',
 
-    btn.addEventListener('pointermove', (e) => {
+credentials:'include',
 
-        if (!dragging) return;
+headers:{
 
-        moved = true;
+'Content-Type':
+'application/x-www-form-urlencoded; charset=UTF-8',
 
-        let x = e.clientX - offsetX;
-        let y = e.clientY - offsetY;
+'X-Requested-With':
+'XMLHttpRequest'
 
+},
 
-        x = Math.max(
-            0,
-            Math.min(window.innerWidth - btn.offsetWidth, x)
-        );
+body:body
 
-        y = Math.max(
-            0,
-            Math.min(window.innerHeight - btn.offsetHeight, y)
-        );
+}
+);
 
 
-        btn.style.left = x + 'px';
-        btn.style.top = y + 'px';
+return r;
 
-        e.preventDefault();
-    });
+}
 
 
-    btn.addEventListener('pointerup', (e) => {
 
-        dragging = false;
 
-        try {
-            btn.releasePointerCapture(e.pointerId);
-        } catch (err) {}
 
 
-        btn.style.cursor = 'grab';
 
 
-        localStorage.setItem(STORAGE_X, btn.offsetLeft);
-        localStorage.setItem(STORAGE_Y, btn.offsetTop);
 
+async function doAll(){
 
-        setTimeout(() => {
-            moved = false;
-        }, 100);
 
-    });
 
+try{
 
 
-    // ---------- Клик ----------
-    btn.addEventListener('click', async () => {
+// 1 мех
 
-        if (moved || running) return;
+await post(
+'/mech/',
+'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
+);
 
 
-        running = true;
+await sleep(50);
 
-        status.style.display = 'block';
 
 
-        for (let i = 1; i <= 50; i++) {
 
-            status.textContent = i;
 
+// 2 таланты
 
-            $.post('/pokemon/', {
-                action: 'train-pokemon'
-            }, 'post', 1);
+await post(
+'/natal2026/',
+'action=activate-talant&type=talants&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+);
 
 
-            await new Promise(resolve =>
-                setTimeout(resolve, 30)
-            );
-        }
+await sleep(50);
 
 
-        status.textContent = 'Операция завершена';
 
 
-        setTimeout(() => {
-            status.style.display = 'none';
-        }, 2000);
 
+// 3 способности
 
-        running = false;
+await post(
+'/natal2026/',
+'action=activate-talant&type=abils&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+);
 
-    });
+
+await sleep(50);
+
+
+
+
+
+// 4 использование предмета
+
+await fetch(
+'/player/json/use/196104865/',
+{
+
+method:'GET',
+
+credentials:'include',
+
+headers:{
+
+'X-Requested-With':
+'XMLHttpRequest'
+
+}
+
+}
+);
+
+
+
+
+
+console.log(
+'Robot actions completed'
+);
+
+
+location.reload();
+
+
+
+}
+catch(e){
+
+console.error(
+'Robot error:',
+e
+);
+
+}
+
+
+}
+
+
+
+
+
+
+
+
+
+function createButton(){
+
+
+
+let btn =
+document.createElement('div');
+
+
+btn.id=BUTTON_ID;
+
+
+
+let left='20px';
+let top='80px';
+
+
+
+
+let saved =
+localStorage.getItem(POS_KEY);
+
+
+
+if(saved){
+
+
+try{
+
+let p=JSON.parse(saved);
+
+left=p.left;
+
+top=p.top;
+
+
+}catch(e){}
+
+
+}
+
+
+
+
+
+
+
+
+Object.assign(btn.style,{
+
+position:'fixed',
+
+left:left,
+
+top:top,
+
+width:'65px',
+
+height:'65px',
+
+background:'#333',
+
+border:'2px solid #aaa',
+
+borderRadius:'12px',
+
+zIndex:999999,
+
+display:'flex',
+
+alignItems:'center',
+
+justifyContent:'center',
+
+touchAction:'none',
+
+userSelect:'none'
+
+});
+
+
+
+
+
+
+
+let img =
+document.createElement('img');
+
+
+img.src=
+'/@/images/loc/robot/robot_3.png';
+
+
+img.width=55;
+
+img.height=55;
+
+
+
+btn.appendChild(img);
+
+
+
+
+
+
+
+
+
+let dragging=false;
+
+let moved=false;
+
+let dx=0;
+
+let dy=0;
+
+
+
+
+
+
+
+function start(x,y){
+
+dragging=true;
+
+moved=false;
+
+dx=x-btn.offsetLeft;
+
+dy=y-btn.offsetTop;
+
+}
+
+
+
+
+
+
+
+function move(x,y){
+
+
+if(!dragging)
+return;
+
+
+
+if(
+Math.abs(x-btn.offsetLeft)>5 ||
+Math.abs(y-btn.offsetTop)>5
+)
+
+moved=true;
+
+
+
+
+btn.style.left=
+(x-dx)+'px';
+
+
+btn.style.top=
+(y-dy)+'px';
+
+
+}
+
+
+
+
+
+
+
+
+function end(){
+
+
+if(!dragging)
+return;
+
+
+dragging=false;
+
+
+
+localStorage.setItem(
+
+POS_KEY,
+
+JSON.stringify({
+
+left:btn.style.left,
+
+top:btn.style.top
+
+})
+
+);
+
+
+}
+
+
+
+
+
+
+
+// мышь
+
+btn.addEventListener(
+'mousedown',
+e=>start(
+e.clientX,
+e.clientY
+)
+);
+
+
+document.addEventListener(
+'mousemove',
+e=>move(
+e.clientX,
+e.clientY
+)
+);
+
+
+document.addEventListener(
+'mouseup',
+end
+);
+
+
+
+
+
+
+
+
+// телефон
+
+btn.addEventListener(
+'touchstart',
+e=>{
+
+let t=e.touches[0];
+
+start(
+t.clientX,
+t.clientY
+);
+
+},
+{passive:false}
+);
+
+
+
+
+btn.addEventListener(
+'touchmove',
+e=>{
+
+let t=e.touches[0];
+
+move(
+t.clientX,
+t.clientY
+);
+
+e.preventDefault();
+
+},
+{passive:false}
+);
+
+
+
+
+
+btn.addEventListener(
+'touchend',
+end
+);
+
+
+
+
+
+
+
+btn.onclick=function(){
+
+
+if(moved)
+return;
+
+
+doAll();
+
+
+};
+
+
+
+
+
+
+document.body.appendChild(btn);
+
+
+}
+
+
+
+
+
+
+
+createButton();
+
 
 
 })();
