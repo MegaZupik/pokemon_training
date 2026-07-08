@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MosWar Robot Button Notifications
+// @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      3.0
-// @description  Robot button with response codes
+// @version      5.0
+// @description  Robot mech + talents button
 // @match        https://www.moswar.ru/*
 // @grant        none
 // @run-at       document-end
@@ -14,14 +14,13 @@
 'use strict';
 
 
-
-const BUTTON_ID='mw-robot-button';
-const POS_KEY='mw_robot_button_position';
+const BUTTON_ID = 'mw-robot-button';
+const POS_KEY = 'mw_robot_button_position';
 
 
 
 if(document.getElementById(BUTTON_ID))
-return;
+    return;
 
 
 
@@ -29,12 +28,11 @@ return;
 
 function sleep(ms){
 
-return new Promise(
-r=>setTimeout(r,ms)
-);
+    return new Promise(
+        resolve=>setTimeout(resolve,ms)
+    );
 
 }
-
 
 
 
@@ -45,71 +43,67 @@ r=>setTimeout(r,ms)
 function showNotify(text){
 
 
-let old =
-document.getElementById(
-'mw-robot-notify'
-);
+    let old=document.getElementById(
+        'mw-robot-notify'
+    );
 
 
-
-if(old)
-old.remove();
-
-
-
-
-let div =
-document.createElement('div');
-
-
-div.id='mw-robot-notify';
-
-
-div.innerHTML=text;
-
-
-
-Object.assign(div.style,{
-
-position:'fixed',
-
-top:'50%',
-
-left:'50%',
-
-transform:'translate(-50%,-50%)',
-
-background:'rgba(0,0,0,.85)',
-
-color:'white',
-
-padding:'15px 25px',
-
-borderRadius:'12px',
-
-fontSize:'18px',
-
-zIndex:1000000,
-
-textAlign:'center'
-
-});
+    if(old)
+        old.remove();
 
 
 
 
-document.body.appendChild(div);
+    let div=document.createElement('div');
+
+
+    div.id='mw-robot-notify';
+
+
+    div.innerHTML=text;
+
+
+
+    Object.assign(div.style,{
+
+        position:'fixed',
+
+        top:'50%',
+
+        left:'50%',
+
+        transform:'translate(-50%,-50%)',
+
+        background:'rgba(0,0,0,.85)',
+
+        color:'#fff',
+
+        padding:'15px 25px',
+
+        borderRadius:'12px',
+
+        fontSize:'18px',
+
+        zIndex:1000000,
+
+        textAlign:'center'
+
+    });
 
 
 
 
-setTimeout(()=>{
+    document.body.appendChild(div);
 
 
-div.remove();
 
 
-},2000);
+    setTimeout(()=>{
+
+        div.remove();
+
+    },2000);
+
 
 
 }
@@ -122,87 +116,81 @@ div.remove();
 
 
 
-
-async function postNatal(type){
-
-
-let r =
-await fetch(
-'/natal2026/',
-{
-
-method:'POST',
-
-credentials:'include',
-
-headers:{
-
-'Content-Type':
-'application/x-www-form-urlencoded; charset=UTF-8',
-
-'X-Requested-With':
-'XMLHttpRequest'
-
-},
-
-
-body:
-
-'action=activate-talant&type='
-+type+
-'&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
-
-
-}
-
-);
+async function sendPost(url,body){
 
 
 
-let data =
-await r.json();
-
-
-
-console.log(
-'NATAL RESPONSE:',
-data
-);
+    console.log(
+        'SEND:',
+        url,
+        body
+    );
 
 
 
 
+    let response =
+    await fetch(
 
-if(data.code==='revive'){
+        url,
 
+        {
 
-showNotify(
-'Вы получили бессмертие на 1 ход<br>Код: revive'
-);
+        method:'POST',
 
+        credentials:'include',
 
-}
-
-
-
-else if(data.code==='passive2'){
+        headers:{
 
 
-showNotify(
-'Вы получили немного статов<br>Код: passive2'
-);
+            'Content-Type':
+            'application/x-www-form-urlencoded; charset=UTF-8',
 
 
-}
+            'X-Requested-With':
+            'XMLHttpRequest'
+
+
+        },
+
+
+        body:body
+
+
+        }
+
+    );
 
 
 
-else if(data.code){
+
+    let text =
+    await response.text();
 
 
-showNotify(
-'Код: '+data.code
-);
+
+    console.log(
+        'ANSWER:',
+        text
+    );
+
+
+
+
+    try{
+
+
+        return JSON.parse(text);
+
+
+    }
+    catch(e){
+
+
+        return {};
+
+
+    }
 
 
 }
@@ -210,8 +198,95 @@ showNotify(
 
 
 
-return data;
 
+
+
+
+
+async function activateNatal(type,num){
+
+
+
+    let data =
+    await sendPost(
+
+        '/natal2026/',
+
+
+        'action=activate-talant&type='+
+        type+
+        '&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+
+    );
+
+
+
+
+    console.log(
+        'NATAL '+num,
+        data
+    );
+
+
+
+
+
+    if(data.result !== 1){
+
+
+        showNotify(
+            'Талант №'+num+' в откате'
+        );
+
+
+        return data;
+
+
+    }
+
+
+
+
+
+
+
+    if(data.code==='revive'){
+
+
+        showNotify(
+            'Вы получили бессмертие на 1 ход<br>Код: revive'
+        );
+
+
+    }
+
+
+
+    else if(data.code==='passive2'){
+
+
+        showNotify(
+            'Вы получили немного статов<br>Код: passive2'
+        );
+
+
+    }
+
+
+
+    else if(data.code){
+
+
+        showNotify(
+            'Код: '+data.code
+        );
+
+
+    }
+
+
+
+    return data;
 
 
 }
@@ -228,101 +303,85 @@ async function doAll(){
 
 
 
+console.log(
+    'ROBOT START'
+);
+
+
+
+
 try{
 
 
-// мех
+    let mech =
+    await sendPost(
 
-await fetch(
-'/mech/',
-{
-
-method:'POST',
-
-credentials:'include',
-
-headers:{
-
-'Content-Type':
-'application/x-www-form-urlencoded; charset=UTF-8',
-
-'X-Requested-With':
-'XMLHttpRequest'
-
-},
-
-body:
-
-'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
-
-}
-
-);
+        '/mech/',
 
 
+        'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
 
-await sleep(50);
+    );
 
 
 
 
 
 
-// талант
-
-await postNatal(
-'talants'
-);
+    if(mech.result !== 1){
 
 
-
-await sleep(50);
-
-
-
+        showNotify(
+            'Робот в откате'
+        );
 
 
-// способности
-
-await postNatal(
-'abils'
-);
+        return;
 
 
-
-await sleep(50);
+    }
 
 
 
 
 
-// предмет
-
-let item =
-await fetch(
-'/player/json/use/196104865/',
-{
-
-method:'GET',
-
-credentials:'include',
-
-headers:{
-
-'X-Requested-With':
-'XMLHttpRequest'
-
-}
-
-}
-);
+    await sleep(50);
 
 
 
-console.log(
-'ITEM:',
-await item.json()
-);
+
+
+
+    await activateNatal(
+
+        'talants',
+
+        2
+
+    );
+
+
+
+
+
+
+    await sleep(50);
+
+
+
+
+
+
+    await activateNatal(
+
+        'abils',
+
+        3
+
+    );
+
+
+
 
 
 
@@ -330,9 +389,21 @@ await item.json()
 }
 catch(e){
 
-console.error(e);
+
+    console.error(
+        'ROBOT ERROR',
+        e
+    );
+
 
 }
+
+
+
+console.log(
+    'ROBOT END'
+);
+
 
 
 }
@@ -359,29 +430,42 @@ btn.id=BUTTON_ID;
 
 
 
-let pos =
-localStorage.getItem(POS_KEY);
-
-
-
 let left='20px';
 
 let top='80px';
 
 
 
-if(pos){
+
+
+let saved =
+localStorage.getItem(
+    POS_KEY
+);
+
+
+
+
+
+if(saved){
+
 
 try{
 
-let p=
-JSON.parse(pos);
+
+let p =
+JSON.parse(saved);
+
 
 left=p.left;
 
 top=p.top;
 
-}catch(e){}
+
+
+}
+catch(e){}
+
 
 
 }
@@ -394,6 +478,7 @@ top=p.top;
 
 
 Object.assign(btn.style,{
+
 
 position:'fixed',
 
@@ -419,7 +504,10 @@ alignItems:'center',
 
 justifyContent:'center',
 
-touchAction:'none'
+touchAction:'none',
+
+userSelect:'none'
+
 
 });
 
@@ -433,8 +521,10 @@ let img =
 document.createElement('img');
 
 
-img.src=
+
+img.src =
 '/@/images/loc/robot/robot_3.png';
+
 
 
 img.width=55;
@@ -453,7 +543,7 @@ btn.appendChild(img);
 
 
 
-let drag=false;
+let dragging=false;
 
 let moved=false;
 
@@ -466,15 +556,20 @@ let dy=0;
 
 
 
-function start(x,y){
 
-drag=true;
+
+function startDrag(x,y){
+
+
+dragging=true;
 
 moved=false;
+
 
 dx=x-btn.offsetLeft;
 
 dy=y-btn.offsetTop;
+
 
 }
 
@@ -484,28 +579,35 @@ dy=y-btn.offsetTop;
 
 
 
-function move(x,y){
+function moveDrag(x,y){
 
 
-if(!drag)
+if(!dragging)
 return;
 
 
 
+
 if(
+
 Math.abs(x-btn.offsetLeft)>5 ||
+
 Math.abs(y-btn.offsetTop)>5
+
 )
 
 moved=true;
 
 
 
-btn.style.left=
+
+
+btn.style.left =
 (x-dx)+'px';
 
 
-btn.style.top=
+
+btn.style.top =
 (y-dy)+'px';
 
 
@@ -517,13 +619,19 @@ btn.style.top=
 
 
 
-function end(){
 
-if(!drag)
+
+function endDrag(){
+
+
+
+if(!dragging)
 return;
 
 
-drag=false;
+
+dragging=false;
+
 
 
 
@@ -531,15 +639,20 @@ localStorage.setItem(
 
 POS_KEY,
 
+
 JSON.stringify({
 
 left:btn.style.left,
 
 top:btn.style.top
 
+
 })
 
+
 );
+
+
 
 }
 
@@ -547,28 +660,59 @@ top:btn.style.top
 
 
 
+
+
+
+
 btn.addEventListener(
+
 'mousedown',
-e=>start(
+
+e=>{
+
+startDrag(
 e.clientX,
 e.clientY
-)
+);
+
+}
+
 );
 
 
+
+
+
+
 document.addEventListener(
+
 'mousemove',
-e=>move(
+
+e=>{
+
+moveDrag(
 e.clientX,
 e.clientY
-)
 );
+
+}
+
+);
+
+
+
+
 
 
 document.addEventListener(
+
 'mouseup',
-end
+
+endDrag
+
 );
+
+
 
 
 
@@ -577,40 +721,59 @@ end
 
 
 btn.addEventListener(
+
 'touchstart',
+
 e=>{
+
 
 let t=e.touches[0];
 
-start(
+
+startDrag(
 t.clientX,
 t.clientY
 );
+
 
 },
+
 {passive:false}
+
 );
+
+
 
 
 
 
 
 btn.addEventListener(
+
 'touchmove',
+
 e=>{
+
 
 let t=e.touches[0];
 
-move(
+
+moveDrag(
 t.clientX,
 t.clientY
 );
+
+
 
 e.preventDefault();
 
+
 },
+
 {passive:false}
+
 );
+
 
 
 
@@ -618,9 +781,13 @@ e.preventDefault();
 
 
 btn.addEventListener(
+
 'touchend',
-end
+
+endDrag
+
 );
+
 
 
 
@@ -635,6 +802,7 @@ if(moved)
 return;
 
 
+
 doAll();
 
 
@@ -644,10 +812,15 @@ doAll();
 
 
 
+
+
+
 document.body.appendChild(btn);
 
 
+
 }
+
 
 
 
