@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      8.0
-// @description  Robot mech + talents
+// @version      12.0
+// @description  Robot + talents codes
 // @match        https://www.moswar.ru/*
 // @grant        none
 // @run-at       document-end
@@ -72,37 +72,84 @@ async function sendPost(url,body){
     try{
         return JSON.parse(t);
     }catch(e){
-        console.error('JSON ERROR',e);
+        console.error(e);
         return {};
     }
 }
 
-function hasError(data){
-    return data && data.error;
+function failed(data){
+    return !data || data.result!==1 || data.error;
 }
 
-async function activateNatal(type,num){
+
+function showCode(data){
+
+    let text={
+        revive:'Вы получили бессмертие на 1 ход',
+        passive1:'Вы получили щипы',
+        passive2:'Вы получили немного статов',
+        dg_passive3:'Полная ярость в бою',
+        dg_passive4:'Вы наносите урон по врагам',
+        maxhp:'Вы получили много ХП',
+        max_rage:'Вы удвоили максимальную ярость',
+        summon_blue_designer:'Вы получили НПЦ для призыва'
+    };
+
+
+    if(data.code && text[data.code]){
+
+        showNotify(
+            text[data.code]+'<br>Код: '+data.code
+        );
+
+    }
+    else if(data.code){
+
+        showNotify(
+            'Код: '+data.code
+        );
+
+    }
+
+}
+
+
+async function activateTalent(type,num){
 
     let data=await sendPost(
         '/natal2026/',
         'action=activate-talant&type='+type+'&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
     );
 
-    if(hasError(data)){
-        showNotify('Талант №'+num+' в откате');
+
+    if(failed(data)){
+
+        showNotify(
+            'Талант №'+num+' в откате'
+        );
+
+        console.log(
+            'TALENT FAIL',
+            num,
+            data
+        );
+
         return;
     }
 
-    if(data.code==='revive'){
-        showNotify('Вы получили бессмертие на 1 ход<br>Код: revive');
-    }
-    else if(data.code==='passive2'){
-        showNotify('Вы получили немного статов<br>Код: passive2');
-    }
-    else if(data.code){
-        showNotify('Код: '+data.code);
-    }
+
+    console.log(
+        'TALENT OK',
+        num,
+        data
+    );
+
+
+    showCode(data);
+
 }
+
+
 
 async function runRobot(){
 
@@ -115,28 +162,53 @@ async function runRobot(){
     );
 
 
-    if(hasError(mech)){
-        showNotify('Робот в откате');
-    }
-    else{
-        showNotify('Робот запущен');
+    if(failed(mech)){
+
+        showNotify(
+            'Робот в откате'
+        );
+
+        console.log(
+            'ROBOT FAIL',
+            mech
+        );
+
+    }else{
+
+        showNotify(
+            'Робот запущен'
+        );
+
+        console.log(
+            'ROBOT OK',
+            mech
+        );
+
     }
 
 
     await sleep(50);
 
 
-    await activateNatal('talants',2);
+    await activateTalent(
+        'talants',
+        2
+    );
 
 
     await sleep(50);
 
 
-    await activateNatal('abils',3);
+    await activateTalent(
+        'abils',
+        3
+    );
 
 
     console.log('=== ROBOT END ===');
+
 }
+
 
 
 function createButton(){
@@ -144,7 +216,10 @@ function createButton(){
     let b=document.createElement('div');
     b.id=ID;
 
-    let p=JSON.parse(localStorage.getItem(POS)||'null');
+
+    let p=JSON.parse(
+        localStorage.getItem(POS)||'null'
+    );
 
 
     Object.assign(b.style,{
@@ -166,9 +241,12 @@ function createButton(){
 
 
     let img=document.createElement('img');
+
     img.src='/@/images/loc/robot/robot_3.png';
+
     img.width=55;
     img.height=55;
+
     b.appendChild(img);
 
 
@@ -190,15 +268,17 @@ function createButton(){
 
         if(!drag)return;
 
+
         if(
             Math.abs(x-b.offsetLeft)>5 ||
             Math.abs(y-b.offsetTop)>5
-        ){
+        )
             moved=true;
-        }
+
 
         b.style.left=(x-dx)+'px';
         b.style.top=(y-dy)+'px';
+
     }
 
 
@@ -215,44 +295,65 @@ function createButton(){
                 top:b.style.top
             })
         );
+
     }
 
 
-    b.addEventListener('mousedown',e=>{
-        start(e.clientX,e.clientY);
-    });
 
-    document.addEventListener('mousemove',e=>{
-        move(e.clientX,e.clientY);
-    });
-
-    document.addEventListener('mouseup',end);
+    b.addEventListener(
+        'mousedown',
+        e=>start(e.clientX,e.clientY)
+    );
 
 
-    b.addEventListener('touchstart',e=>{
-        let t=e.touches[0];
-        start(t.clientX,t.clientY);
-    },{passive:false});
+    document.addEventListener(
+        'mousemove',
+        e=>move(e.clientX,e.clientY)
+    );
 
 
-    b.addEventListener('touchmove',e=>{
-        let t=e.touches[0];
-        move(t.clientX,t.clientY);
-        e.preventDefault();
-    },{passive:false});
+    document.addEventListener(
+        'mouseup',
+        end
+    );
 
 
-    b.addEventListener('touchend',end);
+
+    b.addEventListener(
+        'touchstart',
+        e=>{
+            let t=e.touches[0];
+            start(t.clientX,t.clientY);
+        },
+        {passive:false}
+    );
+
+
+    b.addEventListener(
+        'touchmove',
+        e=>{
+            let t=e.touches[0];
+            move(t.clientX,t.clientY);
+            e.preventDefault();
+        },
+        {passive:false}
+    );
+
+
+    b.addEventListener(
+        'touchend',
+        end
+    );
 
 
     b.onclick=()=>{
-        if(!moved){
+        if(!moved)
             runRobot();
-        }
     };
 
 
     document.body.appendChild(b);
+
 }
 
 
