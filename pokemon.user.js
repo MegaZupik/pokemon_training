@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      6.0
+// @version      8.0
 // @description  Robot mech + talents
 // @match        https://www.moswar.ru/*
 // @grant        none
@@ -17,11 +17,14 @@ let notes=[];
 
 if(document.getElementById(ID))return;
 
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function sleep(ms){
+    return new Promise(r=>setTimeout(r,ms));
+}
 
 function showNotify(text){
     let d=document.createElement('div');
     d.innerHTML=text;
+
     Object.assign(d.style,{
         position:'fixed',
         left:'50%',
@@ -35,17 +38,23 @@ function showNotify(text){
         zIndex:1000000,
         textAlign:'center'
     });
+
     document.body.appendChild(d);
     notes.push(d);
+
     setTimeout(()=>{
         d.remove();
         notes=notes.filter(x=>x!==d);
-        notes.forEach((x,i)=>x.style.top=(80+i*60)+'px');
+        notes.forEach((x,i)=>{
+            x.style.top=(80+i*60)+'px';
+        });
     },2000);
 }
 
 async function sendPost(url,body){
-    console.log('SEND',url,body);
+
+    console.log('SEND:',url,body);
+
     let r=await fetch(url,{
         method:'POST',
         credentials:'include',
@@ -55,60 +64,88 @@ async function sendPost(url,body){
         },
         body
     });
+
     let t=await r.text();
-    console.log('ANSWER',t);
-    try{return JSON.parse(t)}catch(e){return {}}
+
+    console.log('ANSWER:',url,t);
+
+    try{
+        return JSON.parse(t);
+    }catch(e){
+        console.error('JSON ERROR',e);
+        return {};
+    }
 }
 
 function hasError(data){
-    return data.error && data.error.length;
+    return data && data.error;
 }
 
-async function natal(type,num){
+async function activateNatal(type,num){
+
     let data=await sendPost(
         '/natal2026/',
         'action=activate-talant&type='+type+'&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
     );
+
     if(hasError(data)){
         showNotify('Талант №'+num+' в откате');
-        return false;
+        return;
     }
-    if(data.code==='revive')
+
+    if(data.code==='revive'){
         showNotify('Вы получили бессмертие на 1 ход<br>Код: revive');
-    else if(data.code==='passive2')
+    }
+    else if(data.code==='passive2'){
         showNotify('Вы получили немного статов<br>Код: passive2');
-    else if(data.code)
+    }
+    else if(data.code){
         showNotify('Код: '+data.code);
-    return true;
+    }
 }
 
 async function runRobot(){
-    showNotify('Робот запущен');
+
+    console.log('=== ROBOT START ===');
+
 
     let mech=await sendPost(
         '/mech/',
         'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
     );
 
+
     if(hasError(mech)){
         showNotify('Робот в откате');
-        return;
+    }
+    else{
+        showNotify('Робот запущен');
     }
 
-    await sleep(50);
-
-    await natal('talants',2);
 
     await sleep(50);
 
-    await natal('abils',3);
+
+    await activateNatal('talants',2);
+
+
+    await sleep(50);
+
+
+    await activateNatal('abils',3);
+
+
+    console.log('=== ROBOT END ===');
 }
 
+
 function createButton(){
+
     let b=document.createElement('div');
     b.id=ID;
 
     let p=JSON.parse(localStorage.getItem(POS)||'null');
+
 
     Object.assign(b.style,{
         position:'fixed',
@@ -127,13 +164,19 @@ function createButton(){
         userSelect:'none'
     });
 
+
     let img=document.createElement('img');
     img.src='/@/images/loc/robot/robot_3.png';
     img.width=55;
     img.height=55;
     b.appendChild(img);
 
-    let drag=false,moved=false,dx=0,dy=0;
+
+    let drag=false;
+    let moved=false;
+    let dx=0;
+    let dy=0;
+
 
     function start(x,y){
         drag=true;
@@ -142,30 +185,55 @@ function createButton(){
         dy=y-b.offsetTop;
     }
 
+
     function move(x,y){
+
         if(!drag)return;
-        if(Math.abs(x-b.offsetLeft)>5||Math.abs(y-b.offsetTop)>5)moved=true;
+
+        if(
+            Math.abs(x-b.offsetLeft)>5 ||
+            Math.abs(y-b.offsetTop)>5
+        ){
+            moved=true;
+        }
+
         b.style.left=(x-dx)+'px';
         b.style.top=(y-dy)+'px';
     }
 
+
     function end(){
+
         if(!drag)return;
+
         drag=false;
-        localStorage.setItem(POS,JSON.stringify({
-            left:b.style.left,
-            top:b.style.top
-        }));
+
+        localStorage.setItem(
+            POS,
+            JSON.stringify({
+                left:b.style.left,
+                top:b.style.top
+            })
+        );
     }
 
-    b.addEventListener('mousedown',e=>start(e.clientX,e.clientY));
-    document.addEventListener('mousemove',e=>move(e.clientX,e.clientY));
+
+    b.addEventListener('mousedown',e=>{
+        start(e.clientX,e.clientY);
+    });
+
+    document.addEventListener('mousemove',e=>{
+        move(e.clientX,e.clientY);
+    });
+
     document.addEventListener('mouseup',end);
+
 
     b.addEventListener('touchstart',e=>{
         let t=e.touches[0];
         start(t.clientX,t.clientY);
     },{passive:false});
+
 
     b.addEventListener('touchmove',e=>{
         let t=e.touches[0];
@@ -173,14 +241,20 @@ function createButton(){
         e.preventDefault();
     },{passive:false});
 
+
     b.addEventListener('touchend',end);
 
+
     b.onclick=()=>{
-        if(!moved)runRobot();
+        if(!moved){
+            runRobot();
+        }
     };
+
 
     document.body.appendChild(b);
 }
+
 
 createButton();
 
