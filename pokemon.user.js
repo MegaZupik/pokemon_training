@@ -1,13 +1,3 @@
-// ==UserScript==
-// @name         MosWar Robot Multi Button
-// @namespace    https://www.moswar.ru/
-// @version      2.0
-// @description  Robot button: mech + natal talents + abilities + item use
-// @match        https://www.moswar.ru/*
-// @grant        none
-// @run-at       document-end
-// ==/UserScript==
-
 (function(){
 
 'use strict';
