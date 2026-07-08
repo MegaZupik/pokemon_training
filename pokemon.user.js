@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      12.0
+// @version      13.0
 // @description  Robot + talents codes
 // @match        https://www.moswar.ru/*
 // @grant        none
