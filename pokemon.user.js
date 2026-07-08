@@ -1,17 +1,18 @@
 // ==UserScript==
-// @name         MosWar Robot Multi Button
+// @name         MosWar Robot Button Notifications
 // @namespace    https://www.moswar.ru/
-// @version      2.0
-// @description  Robot button: mech + natal talents + abilities + item use
+// @version      3.0
+// @description  Robot button with response codes
 // @match        https://www.moswar.ru/*
 // @grant        none
-// @updateURL    https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
-// @downloadURL  https://github.com/MegaZupik/pokemon_training/raw/refs/heads/main/pokemon.user.js
 // @run-at       document-end
 // ==/UserScript==
+
+
 (function(){
 
 'use strict';
+
 
 
 const BUTTON_ID='mw-robot-button';
@@ -25,10 +26,11 @@ return;
 
 
 
+
 function sleep(ms){
 
 return new Promise(
-resolve=>setTimeout(resolve,ms)
+r=>setTimeout(r,ms)
 );
 
 }
@@ -39,12 +41,94 @@ resolve=>setTimeout(resolve,ms)
 
 
 
-async function post(url,body){
+
+function showNotify(text){
+
+
+let old =
+document.getElementById(
+'mw-robot-notify'
+);
+
+
+
+if(old)
+old.remove();
+
+
+
+
+let div =
+document.createElement('div');
+
+
+div.id='mw-robot-notify';
+
+
+div.innerHTML=text;
+
+
+
+Object.assign(div.style,{
+
+position:'fixed',
+
+top:'50%',
+
+left:'50%',
+
+transform:'translate(-50%,-50%)',
+
+background:'rgba(0,0,0,.85)',
+
+color:'white',
+
+padding:'15px 25px',
+
+borderRadius:'12px',
+
+fontSize:'18px',
+
+zIndex:1000000,
+
+textAlign:'center'
+
+});
+
+
+
+
+document.body.appendChild(div);
+
+
+
+
+setTimeout(()=>{
+
+
+div.remove();
+
+
+},2000);
+
+
+}
+
+
+
+
+
+
+
+
+
+
+async function postNatal(type){
 
 
 let r =
 await fetch(
-url,
+'/natal2026/',
 {
 
 method:'POST',
@@ -61,13 +145,74 @@ headers:{
 
 },
 
-body:body
+
+body:
+
+'action=activate-talant&type='
++type+
+'&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+
 
 }
+
 );
 
 
-return r;
+
+let data =
+await r.json();
+
+
+
+console.log(
+'NATAL RESPONSE:',
+data
+);
+
+
+
+
+
+if(data.code==='revive'){
+
+
+showNotify(
+'Вы получили бессмертие на 1 ход<br>Код: revive'
+);
+
+
+}
+
+
+
+else if(data.code==='passive2'){
+
+
+showNotify(
+'Вы получили немного статов<br>Код: passive2'
+);
+
+
+}
+
+
+
+else if(data.code){
+
+
+showNotify(
+'Код: '+data.code
+);
+
+
+}
+
+
+
+
+return data;
+
+
 
 }
 
@@ -86,12 +231,34 @@ async function doAll(){
 try{
 
 
-// 1 мех
+// мех
 
-await post(
+await fetch(
 '/mech/',
+{
+
+method:'POST',
+
+credentials:'include',
+
+headers:{
+
+'Content-Type':
+'application/x-www-form-urlencoded; charset=UTF-8',
+
+'X-Requested-With':
+'XMLHttpRequest'
+
+},
+
+body:
+
 'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
+
+}
+
 );
+
 
 
 await sleep(50);
@@ -100,12 +267,13 @@ await sleep(50);
 
 
 
-// 2 таланты
 
-await post(
-'/natal2026/',
-'action=activate-talant&type=talants&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+// талант
+
+await postNatal(
+'talants'
 );
+
 
 
 await sleep(50);
@@ -114,12 +282,12 @@ await sleep(50);
 
 
 
-// 3 способности
+// способности
 
-await post(
-'/natal2026/',
-'action=activate-talant&type=abils&ajax=1&__referrer=%2Fnatal2026%2F&return_url=%2Fnatal2026%2F'
+await postNatal(
+'abils'
 );
+
 
 
 await sleep(50);
@@ -128,8 +296,9 @@ await sleep(50);
 
 
 
-// 4 использование предмета
+// предмет
 
+let item =
 await fetch(
 '/player/json/use/196104865/',
 {
@@ -150,24 +319,18 @@ headers:{
 
 
 
-
-
 console.log(
-'Robot actions completed'
+'ITEM:',
+await item.json()
 );
 
-
-location.reload();
 
 
 
 }
 catch(e){
 
-console.error(
-'Robot error:',
-e
-);
+console.error(e);
 
 }
 
@@ -194,28 +357,29 @@ btn.id=BUTTON_ID;
 
 
 
-let left='20px';
-let top='80px';
 
 
-
-
-let saved =
+let pos =
 localStorage.getItem(POS_KEY);
 
 
 
-if(saved){
+let left='20px';
 
+let top='80px';
+
+
+
+if(pos){
 
 try{
 
-let p=JSON.parse(saved);
+let p=
+JSON.parse(pos);
 
 left=p.left;
 
 top=p.top;
-
 
 }catch(e){}
 
@@ -255,9 +419,7 @@ alignItems:'center',
 
 justifyContent:'center',
 
-touchAction:'none',
-
-userSelect:'none'
+touchAction:'none'
 
 });
 
@@ -291,7 +453,7 @@ btn.appendChild(img);
 
 
 
-let dragging=false;
+let drag=false;
 
 let moved=false;
 
@@ -304,10 +466,9 @@ let dy=0;
 
 
 
-
 function start(x,y){
 
-dragging=true;
+drag=true;
 
 moved=false;
 
@@ -326,7 +487,7 @@ dy=y-btn.offsetTop;
 function move(x,y){
 
 
-if(!dragging)
+if(!drag)
 return;
 
 
@@ -340,13 +501,13 @@ moved=true;
 
 
 
-
 btn.style.left=
 (x-dx)+'px';
 
 
 btn.style.top=
 (y-dy)+'px';
+
 
 
 }
@@ -356,16 +517,13 @@ btn.style.top=
 
 
 
-
-
 function end(){
 
-
-if(!dragging)
+if(!drag)
 return;
 
 
-dragging=false;
+drag=false;
 
 
 
@@ -383,16 +541,11 @@ top:btn.style.top
 
 );
 
-
 }
 
 
 
 
-
-
-
-// мышь
 
 btn.addEventListener(
 'mousedown',
@@ -423,9 +576,6 @@ end
 
 
 
-
-// телефон
-
 btn.addEventListener(
 'touchstart',
 e=>{
@@ -440,6 +590,7 @@ t.clientY
 },
 {passive:false}
 );
+
 
 
 
@@ -465,6 +616,7 @@ e.preventDefault();
 
 
 
+
 btn.addEventListener(
 'touchend',
 end
@@ -476,7 +628,7 @@ end
 
 
 
-btn.onclick=function(){
+btn.onclick=()=>{
 
 
 if(moved)
@@ -492,12 +644,10 @@ doAll();
 
 
 
-
 document.body.appendChild(btn);
 
 
 }
-
 
 
 
