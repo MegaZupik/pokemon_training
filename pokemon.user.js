@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      13.0
-// @description  Robot + talents codes
+// @version      15.0
+// @description  Robot + talents codes + generator
 // @match        https://www.moswar.ru/*
 // @grant        none
 // @run-at       document-end
@@ -17,11 +17,14 @@ let notes=[];
 
 if(document.getElementById(ID))return;
 
+
 function sleep(ms){
     return new Promise(r=>setTimeout(r,ms));
 }
 
+
 function showNotify(text){
+
     let d=document.createElement('div');
     d.innerHTML=text;
 
@@ -39,21 +42,32 @@ function showNotify(text){
         textAlign:'center'
     });
 
+
     document.body.appendChild(d);
+
     notes.push(d);
 
+
     setTimeout(()=>{
+
         d.remove();
+
         notes=notes.filter(x=>x!==d);
+
         notes.forEach((x,i)=>{
             x.style.top=(80+i*60)+'px';
         });
+
     },2000);
+
 }
+
+
 
 async function sendPost(url,body){
 
     console.log('SEND:',url,body);
+
 
     let r=await fetch(url,{
         method:'POST',
@@ -65,26 +79,38 @@ async function sendPost(url,body){
         body
     });
 
+
     let t=await r.text();
+
 
     console.log('ANSWER:',url,t);
 
+
     try{
         return JSON.parse(t);
-    }catch(e){
+    }
+    catch(e){
         console.error(e);
         return {};
     }
+
 }
 
+
+
 function failed(data){
+
     return !data || data.result!==1 || data.error;
+
 }
+
+
 
 
 function showCode(data){
 
     let text={
+
         revive:'Вы получили бессмертие на 1 ход',
         passive1:'Вы получили щипы',
         passive2:'Вы получили немного статов',
@@ -93,6 +119,7 @@ function showCode(data){
         maxhp:'Вы получили много ХП',
         max_rage:'Вы удвоили максимальную ярость',
         summon_blue_designer:'Вы получили НПЦ для призыва'
+
     };
 
 
@@ -114,6 +141,8 @@ function showCode(data){
 }
 
 
+
+
 async function activateTalent(type,num){
 
     let data=await sendPost(
@@ -122,11 +151,13 @@ async function activateTalent(type,num){
     );
 
 
+
     if(failed(data)){
 
         showNotify(
             'Талант №'+num+' в откате'
         );
+
 
         console.log(
             'TALENT FAIL',
@@ -134,8 +165,11 @@ async function activateTalent(type,num){
             data
         );
 
+
         return;
+
     }
+
 
 
     console.log(
@@ -151,15 +185,99 @@ async function activateTalent(type,num){
 
 
 
+
+
+
+// ===============================
+// НОВЫЙ 4-Й ЗАПРОС
+// ===============================
+
+async function useGenerator(){
+
+
+    let html=await fetch('/player/',{
+        credentials:'include'
+    }).then(r=>r.text());
+
+
+
+    let doc=new DOMParser()
+        .parseFromString(html,'text/html');
+
+
+
+    let item=doc.querySelector(
+        'img[data-st="9964"]'
+    );
+
+
+
+    if(!item){
+
+        showNotify(
+            'Генератор не найден'
+        );
+
+        console.log(
+            'GENERATOR NOT FOUND'
+        );
+
+        return;
+    }
+
+
+
+    let id=item.dataset.id;
+
+
+
+    console.log(
+        'GENERATOR ID:',
+        id
+    );
+
+
+
+    await fetch(
+        '/player/json/use/'+id+'/',
+        {
+            method:'GET',
+            credentials:'include',
+            headers:{
+                'X-Requested-With':'XMLHttpRequest'
+            }
+        }
+    );
+
+
+
+    showNotify(
+        'Использован генератор'
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
 async function runRobot(){
 
+
     console.log('=== ROBOT START ===');
+
 
 
     let mech=await sendPost(
         '/mech/',
         'action=overcharge&__referrer=%2Fmech%2F&return_url=%2Fmech%2F'
     );
+
 
 
     if(failed(mech)){
@@ -173,11 +291,13 @@ async function runRobot(){
             mech
         );
 
-    }else{
+    }
+    else{
 
         showNotify(
             'Робот запущен'
         );
+
 
         console.log(
             'ROBOT OK',
@@ -187,7 +307,9 @@ async function runRobot(){
     }
 
 
+
     await sleep(50);
+
 
 
     await activateTalent(
@@ -196,7 +318,9 @@ async function runRobot(){
     );
 
 
+
     await sleep(50);
+
 
 
     await activateTalent(
@@ -205,16 +329,35 @@ async function runRobot(){
     );
 
 
-    console.log('=== ROBOT END ===');
+
+    await sleep(50);
+
+
+
+    await useGenerator();
+
+
+
+    console.log(
+        '=== ROBOT END ==='
+    );
 
 }
 
 
 
+
+
+
+
+
 function createButton(){
 
+
     let b=document.createElement('div');
+
     b.id=ID;
+
 
 
     let p=JSON.parse(
@@ -222,46 +365,81 @@ function createButton(){
     );
 
 
+
     Object.assign(b.style,{
+
         position:'fixed',
+
         left:p?p.left:'20px',
+
         top:p?p.top:'80px',
+
         width:'65px',
+
         height:'65px',
+
         background:'#333',
+
         border:'2px solid #aaa',
+
         borderRadius:'12px',
+
         zIndex:999999,
+
         display:'flex',
+
         alignItems:'center',
+
         justifyContent:'center',
+
         touchAction:'none',
+
         userSelect:'none'
+
     });
+
 
 
     let img=document.createElement('img');
 
+
     img.src='/@/images/loc/robot/robot_3.png';
 
+
     img.width=55;
+
     img.height=55;
+
 
     b.appendChild(img);
 
 
+
+
     let drag=false;
+
     let moved=false;
+
     let dx=0;
+
     let dy=0;
 
 
+
+
     function start(x,y){
+
         drag=true;
+
         moved=false;
+
         dx=x-b.offsetLeft;
+
         dy=y-b.offsetTop;
+
     }
+
+
 
 
     function move(x,y){
@@ -277,16 +455,21 @@ function createButton(){
 
 
         b.style.left=(x-dx)+'px';
+
         b.style.top=(y-dy)+'px';
 
     }
+
+
 
 
     function end(){
 
         if(!drag)return;
 
+
         drag=false;
+
 
         localStorage.setItem(
             POS,
@@ -300,10 +483,12 @@ function createButton(){
 
 
 
+
     b.addEventListener(
         'mousedown',
         e=>start(e.clientX,e.clientY)
     );
+
 
 
     document.addEventListener(
@@ -312,10 +497,13 @@ function createButton(){
     );
 
 
+
     document.addEventListener(
         'mouseup',
         end
     );
+
+
 
 
 
@@ -329,6 +517,7 @@ function createButton(){
     );
 
 
+
     b.addEventListener(
         'touchmove',
         e=>{
@@ -340,16 +529,22 @@ function createButton(){
     );
 
 
+
     b.addEventListener(
         'touchend',
         end
     );
 
 
+
+
     b.onclick=()=>{
+
         if(!moved)
             runRobot();
+
     };
+
 
 
     document.body.appendChild(b);
@@ -357,6 +552,10 @@ function createButton(){
 }
 
 
+
+
 createButton();
+
+
 
 })();
