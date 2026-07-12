@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MosWar Robot Button
 // @namespace    https://www.moswar.ru/
-// @version      15.0
+// @version      16.0
 // @description  Robot + talents codes + generator
 // @match        https://www.moswar.ru/*
 // @grant        none
@@ -330,11 +330,7 @@ async function runRobot(){
 
 
 
-    await sleep(50);
 
-
-
-    await useGenerator();
 
 
 
@@ -548,7 +544,46 @@ function createButton(){
 
 
     document.body.appendChild(b);
+let g=document.createElement('div');
+g.id='mw-generator-button';
+Object.assign(g.style,{
+position:'fixed',
+left:(b.offsetLeft+b.offsetWidth+5)+'px',
+top:b.style.top,
+width:'65px',
+height:'65px',
+background:'#333',
+border:'2px solid #aaa',
+borderRadius:'12px',
+zIndex:999999,
+display:'flex',
+alignItems:'center',
+justifyContent:'center',
+touchAction:'none',
+userSelect:'none'
+});
 
+let gi=document.createElement('img');
+gi.src='/@/images/obj/dung_prize/generator.png';
+gi.width=55;
+gi.height=55;
+g.appendChild(gi);
+document.body.appendChild(g);
+
+function syncGenerator(){
+    g.style.left=(b.offsetLeft+b.offsetWidth+5)+'px';
+    g.style.top=b.style.top;
+}
+
+let oldMove=move;
+move=function(x,y){
+    oldMove(x,y);
+    syncGenerator();
+};
+
+g.onclick=()=>{
+    useGenerator();
+};
 }
 
 
